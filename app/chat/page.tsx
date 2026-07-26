@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
-import { Badge, Btn, Card, Icon, IconBtn } from "../../components/swarm/ui";
+import { Badge, Btn, Icon, IconBtn } from "../../components/swarm/ui";
 import { Sidebar, TopBar } from "../../components/swarm/Shell";
 
 const SIDEBAR_ROUTES: Record<string, string> = {
@@ -20,12 +20,7 @@ const MODELS = [
   { id: "gpt-oss-120b", label: "GPT-OSS 120B", provider: "OpenRouter", tone: "cyan" as const },
 ];
 
-const STARTERS = [
-  "Summarize my latest research project.",
-  "Help me plan a market research swarm.",
-  "Turn these findings into a deck outline.",
-  "Compare sources and flag weak evidence.",
-];
+const COMPOSER_MODES = ["Research", "Draft", "Verify"];
 
 type ChatMessage = { id: string; role: "user" | "assistant"; content: string; time: Date };
 type Conversation = { id: string; title: string; updated: string; messages: ChatMessage[] };
@@ -134,13 +129,92 @@ export default function ChatPage() {
           actions={<Btn kind="secondary" icon="plus" onClick={newChat}>New chat</Btn>}
         />
 
-        <div style={{ flex: 1, display: "grid", gridTemplateColumns: `${chatSidebarOpen ? "300px" : "52px"} minmax(0, 1fr) 280px`, minHeight: 0, transition: "grid-template-columns 180ms cubic-bezier(0.22,1,0.36,1)" }}>
-          <aside style={{ borderRight: "1px solid var(--border)", background: "var(--bg-2)", padding: chatSidebarOpen ? 14 : "14px 8px", overflow: "hidden" }}>
+        <div style={{ flex: 1, display: "grid", gridTemplateColumns: `minmax(0, 1fr) ${chatSidebarOpen ? "300px" : "52px"}`, minHeight: 0, transition: "grid-template-columns 180ms cubic-bezier(0.22,1,0.36,1)" }}>
+          <section style={{ position: "relative", display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0, background: "var(--bg)" }}>
+            <div style={{ flex: 1, overflow: "auto", padding: "24px 24px 138px" }}>
+              <div style={{ maxWidth: 820, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
+                {active.messages.map((message) => <MessageBubble key={message.id} message={message} model={model.label} />)}
+                {isGenerating && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--muted)", fontSize: 13 }}>
+                    <span style={{ width: 12, height: 12, border: "2px solid var(--accent)", borderTopColor: "transparent", borderRadius: 999, animation: "swarm-spin 0.7s linear infinite" }} />
+                    AI Nexus is thinking...
+                  </div>
+                )}
+                <div ref={bottomRef} />
+              </div>
+            </div>
+
+            <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "20px 24px 20px", background: "linear-gradient(180deg, transparent, var(--bg) 32%)" }}>
+              <div style={{ maxWidth: 860, margin: "0 auto" }}>
+                <div style={{
+                  border: "1px solid var(--accent-line)", borderRadius: "var(--r-lg)",
+                  background: "color-mix(in oklab, var(--glass-strong) 88%, var(--bg))",
+                  boxShadow: "var(--shadow-lg), 0 0 0 1px var(--glass-hi) inset",
+                  padding: 12,
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
+                    <label style={{
+                      height: 34, display: "inline-flex", alignItems: "center", gap: 8, padding: "0 11px",
+                      borderRadius: "var(--r-sm)", border: "1px solid var(--border)", background: "var(--surface)",
+                      color: "var(--text-2)", fontSize: 12.5, fontWeight: 650,
+                    }}>
+                      <Icon name="server" size={14} color="var(--accent-2)" />
+                      <select value={modelId} onChange={(event) => setModelId(event.target.value)} style={{
+                        border: "none", outline: "none", background: "transparent", color: "var(--text)",
+                        fontFamily: "var(--font)", fontSize: 12.5, fontWeight: 650, cursor: "pointer", maxWidth: 190,
+                      }}>
+                        {MODELS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+                      </select>
+                    </label>
+                    {COMPOSER_MODES.map((mode) => (
+                      <button key={mode} type="button" style={{
+                        height: 30, padding: "0 10px", borderRadius: "var(--r-pill)", border: "1px solid var(--border)",
+                        background: mode === "Research" ? "var(--accent-soft)" : "var(--surface)",
+                        color: mode === "Research" ? "var(--accent-2)" : "var(--muted)", fontFamily: "var(--font)",
+                        fontSize: 11.5, fontWeight: 650, cursor: "pointer",
+                      }}>{mode}</button>
+                    ))}
+                    <span className="faint mono" style={{ fontSize: 11, marginLeft: "auto" }}>{input.length} chars · {tokenEstimate} est. tokens</span>
+                  </div>
+                  <textarea
+                    value={input}
+                    onChange={(event) => setInput(event.target.value)}
+                    onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); sendMessage(); } }}
+                    placeholder="Ask AI Nexus Chat to research, verify, summarize, or turn an idea into a swarm-ready project..."
+                    rows={2}
+                    style={{
+                      width: "100%", minHeight: 52, resize: "vertical", border: "none", outline: "none",
+                      background: "var(--surface)", color: "var(--text)", fontFamily: "var(--font)", fontSize: 14.5,
+                      lineHeight: 1.5, borderRadius: "var(--r-md)", padding: "10px 12px", boxShadow: "var(--shadow-sm) inset",
+                    }}
+                  />
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 8, flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <IconBtn name="paperclip" size={32} title="Attach files" />
+                      <IconBtn name="settings" size={32} title="Parameters" />
+                      <span style={{ height: 30, display: "inline-flex", alignItems: "center", gap: 6, padding: "0 10px", borderRadius: "var(--r-pill)", background: "var(--surface)", border: "1px solid var(--border)", color: "var(--muted)", fontSize: 11.5, fontWeight: 650 }}>
+                        <Icon name="zap" size={12} /> temp 0.7
+                      </span>
+                      <span style={{ height: 30, display: "inline-flex", alignItems: "center", gap: 6, padding: "0 10px", borderRadius: "var(--r-pill)", background: "var(--surface)", border: "1px solid var(--border)", color: "var(--muted)", fontSize: 11.5, fontWeight: 650 }}>
+                        <Icon name="database" size={12} /> project context
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <span className="faint" style={{ fontSize: 11.5 }}>Enter to send · Shift Enter for newline</span>
+                      <Btn kind="primary" icon={isGenerating ? "x" : "arrow-up"} onClick={() => isGenerating ? setIsGenerating(false) : sendMessage()} style={{ minWidth: 92 }}>{isGenerating ? "Stop" : "Send"}</Btn>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <aside style={{ borderLeft: "1px solid var(--border)", background: "var(--bg-2)", padding: chatSidebarOpen ? 14 : "14px 8px", overflow: "hidden" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: chatSidebarOpen ? "flex-start" : "center", gap: 8, marginBottom: 12 }}>
+              <IconBtn name={chatSidebarOpen ? "chevron-right" : "chevron-left"} size={30} title={chatSidebarOpen ? "Close chat sidebar" : "Open chat sidebar"} onClick={() => setChatSidebarOpen((value) => !value)} />
               {chatSidebarOpen && <Icon name="message-square" size={16} color="var(--accent-2)" />}
               {chatSidebarOpen && <div className="h4">Conversations</div>}
               {chatSidebarOpen && <Badge tone="neutral" style={{ marginLeft: "auto" }}>{conversations.length}</Badge>}
-              <IconBtn name={chatSidebarOpen ? "chevron-left" : "chevron-right"} size={30} title={chatSidebarOpen ? "Close chat sidebar" : "Open chat sidebar"} onClick={() => setChatSidebarOpen((value) => !value)} />
             </div>
             {chatSidebarOpen ? <div style={{ display: "flex", flexDirection: "column", gap: 8, overflow: "auto", height: "calc(100% - 42px)" }}>
               {conversations.map((chat) => {
@@ -174,72 +248,6 @@ export default function ChatPage() {
             )}
           </aside>
 
-          <section style={{ position: "relative", display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0, background: "var(--bg)" }}>
-            <div style={{ padding: "14px 18px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 10 }}>
-              <Badge tone={model.tone}>{model.provider}</Badge>
-              <select value={modelId} onChange={(event) => setModelId(event.target.value)} style={{
-                height: 34, padding: "0 10px", borderRadius: "var(--r-sm)", border: "1px solid var(--border)", background: "var(--surface)",
-                color: "var(--text)", fontFamily: "var(--font)", fontSize: 13,
-              }}>
-                {MODELS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
-              </select>
-              <span className="faint mono" style={{ fontSize: 11, marginLeft: "auto" }}>{tokenEstimate} est. tokens</span>
-            </div>
-
-            <div style={{ flex: 1, overflow: "auto", padding: "24px 24px 132px" }}>
-              <div style={{ maxWidth: 820, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
-                {active.messages.map((message) => <MessageBubble key={message.id} message={message} model={model.label} />)}
-                {isGenerating && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--muted)", fontSize: 13 }}>
-                    <span style={{ width: 12, height: 12, border: "2px solid var(--accent)", borderTopColor: "transparent", borderRadius: 999, animation: "swarm-spin 0.7s linear infinite" }} />
-                    AI Nexus is thinking...
-                  </div>
-                )}
-                <div ref={bottomRef} />
-              </div>
-            </div>
-
-            <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "18px 24px 24px", background: "linear-gradient(180deg, transparent, var(--bg) 28%)" }}>
-              <div style={{ maxWidth: 820, margin: "0 auto" }}>
-                <div style={{ border: "1px solid var(--border)", borderRadius: "var(--r-md)", background: "var(--glass-strong)", boxShadow: "var(--shadow-lg)", padding: 12 }}>
-                  <textarea
-                    value={input}
-                    onChange={(event) => setInput(event.target.value)}
-                    onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); sendMessage(); } }}
-                    placeholder="Ask AI Nexus Chat..."
-                    rows={2}
-                    style={{ width: "100%", resize: "none", border: "none", outline: "none", background: "transparent", color: "var(--text)", fontFamily: "var(--font)", fontSize: 14, lineHeight: 1.5 }}
-                  />
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginTop: 8 }}>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <IconBtn name="paperclip" size={32} title="Attach files" />
-                      <IconBtn name="settings" size={32} title="Parameters" />
-                    </div>
-                    <Btn kind="primary" icon={isGenerating ? "x" : "arrow-up"} onClick={() => isGenerating ? setIsGenerating(false) : sendMessage()}>{isGenerating ? "Stop" : "Send"}</Btn>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <aside style={{ borderLeft: "1px solid var(--border)", background: "var(--bg-2)", padding: 16, overflow: "auto" }}>
-            <Card style={{ padding: 16, marginBottom: 14 }}>
-              <div className="eyebrow">Quick prompts</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}>
-                {STARTERS.map((starter) => (
-                  <button key={starter} onClick={() => sendMessage(starter)} style={{ padding: 10, borderRadius: "var(--r-sm)", border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text-2)", cursor: "pointer", fontFamily: "var(--font)", fontSize: 12.5, textAlign: "left", lineHeight: 1.45 }}>
-                    {starter}
-                  </button>
-                ))}
-              </div>
-            </Card>
-            <Card style={{ padding: 16 }}>
-              <div className="eyebrow">Coming next</div>
-              <p className="muted" style={{ fontSize: 13, lineHeight: 1.55, marginTop: 10 }}>
-                Streaming APIs, persisted conversations, markdown rendering, and project-aware chat will be connected after this UI layer.
-              </p>
-            </Card>
-          </aside>
         </div>
       </main>
     </div>
