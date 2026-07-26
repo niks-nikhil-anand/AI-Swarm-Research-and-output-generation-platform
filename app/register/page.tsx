@@ -176,6 +176,45 @@ function SocialLoginButton({ icon, label }: { icon: "google" | "github"; label: 
   );
 }
 
+function getPasswordRules(password: string) {
+  return [
+    { id: "length", label: "At least 8 characters", valid: password.length >= 8 },
+    { id: "upper", label: "One uppercase letter", valid: /[A-Z]/.test(password) },
+    { id: "lower", label: "One lowercase letter", valid: /[a-z]/.test(password) },
+    { id: "number", label: "One number", valid: /\d/.test(password) },
+    { id: "symbol", label: "One symbol", valid: /[^A-Za-z0-9]/.test(password) },
+  ];
+}
+
+function PasswordRules({ password }: { password: string }) {
+  const rules = getPasswordRules(password);
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "7px 10px", marginTop: 9 }}>
+      {rules.map((rule) => (
+        <div
+          key={rule.id}
+          style={{
+            display: "flex", alignItems: "center", gap: 6, minWidth: 0,
+            color: rule.valid ? "var(--st-done)" : "var(--faint)", fontSize: 11.5,
+          }}
+        >
+          <span
+            style={{
+              width: 16, height: 16, borderRadius: 999, flexShrink: 0, display: "inline-flex",
+              alignItems: "center", justifyContent: "center",
+              background: rule.valid ? "var(--st-done-soft)" : "var(--elevated)",
+              border: `1px solid ${rule.valid ? "color-mix(in oklab, var(--st-done) 42%, transparent)" : "var(--border)"}`,
+            }}
+          >
+            <Icon name={rule.valid ? "check" : "x"} size={10} />
+          </span>
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{rule.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function RegisterPage() {
   const router = useRouter();
   const [name, setName] = useState("");
@@ -184,11 +223,17 @@ export default function RegisterPage() {
   const [confirmPw, setConfirmPw] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPasswordRules, setShowPasswordRules] = useState(false);
 
   async function submit(e?: React.FormEvent) {
     e?.preventDefault();
     if (!name.trim() || !email.trim() || !pw) { setError("Fill in every field to continue."); return; }
-    if (pw.length < 8) { setError("Password must be at least 8 characters."); return; }
+    const failedPasswordRule = getPasswordRules(pw).find((rule) => !rule.valid);
+    if (failedPasswordRule) {
+      setShowPasswordRules(true);
+      setError("Password must be stronger. Check the requirements below.");
+      return;
+    }
     if (pw !== confirmPw) { setError("Passwords don't match."); return; }
     setError(null);
     setLoading(true);
@@ -245,7 +290,12 @@ export default function RegisterPage() {
             </div>
             <div>
               <label className="eyebrow" style={{ display: "block", marginBottom: 6, textTransform: "none", letterSpacing: 0, fontSize: 12.5, fontWeight: 600, color: "var(--text-2)" }}>Password</label>
-              <PasswordField value={pw} onChange={setPw} placeholder="At least 8 characters" field={field} />
+              <PasswordField value={pw} onChange={(value) => { setPw(value); if (value) setShowPasswordRules(true); }} placeholder="Create a strong password" field={field} />
+              {showPasswordRules ? (
+                <PasswordRules password={pw} />
+              ) : (
+                <p className="faint" style={{ fontSize: 11.5, marginTop: 7 }}>Use a strong password with letters, number, and symbol.</p>
+              )}
             </div>
             <div>
               <label className="eyebrow" style={{ display: "block", marginBottom: 6, textTransform: "none", letterSpacing: 0, fontSize: 12.5, fontWeight: 600, color: "var(--text-2)" }}>Confirm password</label>
