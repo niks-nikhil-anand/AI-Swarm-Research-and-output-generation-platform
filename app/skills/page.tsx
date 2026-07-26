@@ -8,7 +8,7 @@ import { Icon, Btn, IconBtn, Badge, Card, Empty } from "../../components/swarm/u
 import { Sidebar, TopBar } from "../../components/swarm/Shell";
 import { SKILL_CATEGORIES, SKILL_CATEGORY_ICON, type Skill, type SkillCategory } from "../../components/swarm/data";
 
-const SIDEBAR_ROUTES: Record<string, string> = { settings: "/settings", dashboard: "/dashboard", history: "/projects", skills: "/skills" };
+const SIDEBAR_ROUTES: Record<string, string> = { settings: "/settings", dashboard: "/dashboard", history: "/projects", skills: "/skills", profile: "/profile", chat: "/chat" };
 
 /* ---- appearance tweaks, persisted to localStorage (mirrors SwarmApp) ---- */
 interface Tweaks { theme: string; accent: string; density: string; motion: number }
