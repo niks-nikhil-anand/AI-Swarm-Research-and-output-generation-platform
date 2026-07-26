@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { verifySession } from "./lib/auth";
 
-const PUBLIC_PATHS = ["/login", "/register"];
+const PUBLIC_PATHS = ["/", "/login", "/register"];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -12,7 +12,7 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
   if (authed && PUBLIC_PATHS.includes(pathname)) {
-    return NextResponse.redirect(new URL("/", request.url));
+    if (pathname !== "/") return NextResponse.redirect(new URL("/new-swarm", request.url));
   }
 }
 
