@@ -10,7 +10,7 @@ import googleIcon from "../../public/social-icon/google.png";
 import githubIcon from "../../public/social-icon/github.png";
 import { SwarmMark, Btn, Icon } from "../../components/swarm/ui";
 
-function SwarmBackdrop({ density = 46 }: { density?: number }) {
+function SwarmBackdrop({ density = 128 }: { density?: number }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const canvas = ref.current;
@@ -19,7 +19,8 @@ function SwarmBackdrop({ density = 46 }: { density?: number }) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     let raf = 0, w = 0, h = 0, dpr = 1;
-    const pts: { x: number; y: number; vx: number; vy: number; r: number }[] = [];
+    const cursor = { x: 0, y: 0, tx: 0, ty: 0, active: false };
+    const pts: { x: number; y: number; vx: number; vy: number; r: number; depth: number }[] = [];
     function accentRGB(): [number, number, number] {
       const v = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#3B82F6";
       const el = document.createElement("div"); el.style.color = v; document.body.appendChild(el);
@@ -34,28 +35,91 @@ function SwarmBackdrop({ density = 46 }: { density?: number }) {
     }
     resize();
     for (let i = 0; i < density; i++) {
-      pts.push({ x: Math.random() * w, y: Math.random() * h, vx: (Math.random() - 0.5) * 0.22, vy: (Math.random() - 0.5) * 0.22, r: Math.random() * 1.6 + 0.8 });
+      const depth = Math.random() * 0.8 + 0.35;
+      pts.push({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        vx: (Math.random() - 0.5) * 0.24,
+        vy: (Math.random() - 0.5) * 0.24,
+        r: Math.random() * 1.7 + 0.7,
+        depth,
+      });
+    }
+    function drawGlow(x: number, y: number, radius: number, alpha: number, colors: [number, number, number]) {
+      const [R, G, B] = colors;
+      const g = ctx!.createRadialGradient(x, y, 0, x, y, radius);
+      g.addColorStop(0, `rgba(${R},${G},${B},${alpha})`);
+      g.addColorStop(0.42, `rgba(${R},${G},${B},${alpha * 0.42})`);
+      g.addColorStop(1, `rgba(${R},${G},${B},0)`);
+      ctx!.fillStyle = g;
+      ctx!.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+    }
+    function moveCursor(e: PointerEvent) {
+      const rect = canvas!.getBoundingClientRect();
+      cursor.tx = e.clientX - rect.left;
+      cursor.ty = e.clientY - rect.top;
+      cursor.active = true;
+    }
+    function leaveCursor() {
+      cursor.active = false;
     }
     function frame() {
       ctx!.clearRect(0, 0, w, h);
       const [R, G, B] = rgb;
+      cursor.x += (cursor.tx - cursor.x) * 0.12;
+      cursor.y += (cursor.ty - cursor.y) * 0.12;
+      drawGlow(w * 0.18, h * 0.18, Math.min(w, h) * 0.42, 0.08, [R, G, B]);
+      drawGlow(w * 0.82, h * 0.78, Math.min(w, h) * 0.36, 0.055, [34, 211, 238]);
+      drawGlow(w * 0.68, h * 0.24, Math.min(w, h) * 0.30, 0.045, [168, 85, 247]);
+      if (cursor.active) drawGlow(cursor.x, cursor.y, 190, 0.16, [R, G, B]);
+
       for (const p of pts) {
-        if (!reduce) { p.x += p.vx; p.y += p.vy; }
+        if (!reduce) {
+          if (cursor.active) {
+            const dx = cursor.x - p.x;
+            const dy = cursor.y - p.y;
+            const d = Math.max(Math.hypot(dx, dy), 1);
+            if (d < 180) {
+              const pull = (1 - d / 180) * 0.028 * p.depth;
+              p.vx += (dx / d) * pull;
+              p.vy += (dy / d) * pull;
+            }
+          }
+          p.vx *= 0.992;
+          p.vy *= 0.992;
+          p.x += p.vx * p.depth;
+          p.y += p.vy * p.depth;
+        }
         if (p.x < 0 || p.x > w) p.vx *= -1;
         if (p.y < 0 || p.y > h) p.vy *= -1;
+        p.x = Math.max(0, Math.min(w, p.x));
+        p.y = Math.max(0, Math.min(h, p.y));
       }
       for (let i = 0; i < pts.length; i++) {
         for (let j = i + 1; j < pts.length; j++) {
           const a = pts[i], b = pts[j];
           const dx = a.x - b.x, dy = a.y - b.y; const d = Math.hypot(dx, dy);
-          if (d < 130) {
-            ctx!.strokeStyle = `rgba(${R},${G},${B},${(1 - d / 130) * 0.16})`;
+          if (d < 118) {
+            ctx!.strokeStyle = `rgba(${R},${G},${B},${(1 - d / 118) * 0.14})`;
             ctx!.lineWidth = 1; ctx!.beginPath(); ctx!.moveTo(a.x, a.y); ctx!.lineTo(b.x, b.y); ctx!.stroke();
           }
         }
       }
+      if (cursor.active) {
+        for (const p of pts) {
+          const d = Math.hypot(cursor.x - p.x, cursor.y - p.y);
+          if (d < 170) {
+            ctx!.strokeStyle = `rgba(${R},${G},${B},${(1 - d / 170) * 0.24})`;
+            ctx!.lineWidth = 1;
+            ctx!.beginPath();
+            ctx!.moveTo(cursor.x, cursor.y);
+            ctx!.lineTo(p.x, p.y);
+            ctx!.stroke();
+          }
+        }
+      }
       for (const p of pts) {
-        ctx!.fillStyle = `rgba(${R},${G},${B},0.7)`;
+        ctx!.fillStyle = `rgba(${R},${G},${B},${0.42 + p.depth * 0.28})`;
         ctx!.beginPath(); ctx!.arc(p.x, p.y, p.r, 0, 7); ctx!.fill();
       }
       if (!reduce) raf = requestAnimationFrame(frame);
@@ -63,9 +127,17 @@ function SwarmBackdrop({ density = 46 }: { density?: number }) {
     frame();
     const ro = new ResizeObserver(resize); ro.observe(canvas);
     const t = setInterval(() => { rgb = accentRGB(); }, 1200);
-    return () => { cancelAnimationFrame(raf); ro.disconnect(); clearInterval(t); };
+    window.addEventListener("pointermove", moveCursor);
+    window.addEventListener("pointerleave", leaveCursor);
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+      clearInterval(t);
+      window.removeEventListener("pointermove", moveCursor);
+      window.removeEventListener("pointerleave", leaveCursor);
+    };
   }, [density]);
-  return <canvas ref={ref} style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} />;
+  return <canvas ref={ref} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} />;
 }
 
 function PasswordField({ value, onChange, placeholder, field }: {
@@ -145,7 +217,7 @@ export default function RegisterPage() {
   };
   return (
     <div style={{ position: "fixed", inset: 0, background: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
-      <SwarmBackdrop />
+      <SwarmBackdrop density={128} />
       <div style={{ position: "absolute", top: "-20%", left: "50%", transform: "translateX(-50%)", width: 720, height: 720, borderRadius: "50%", background: "radial-gradient(circle, var(--accent-soft), transparent 62%)", filter: "blur(20px)", pointerEvents: "none" }} />
 
       <div className="rise" style={{ position: "relative", width: 392, maxWidth: "92vw" }}>
