@@ -77,7 +77,7 @@ function useTweaks(defaults: Tweaks): [Tweaks, (k: keyof Tweaks, v: string | num
   return [t, setTweak];
 }
 
-const SIDEBAR_ROUTES: Record<string, string> = { settings: "/settings", dashboard: "/dashboard", history: "/projects", skills: "/skills" };
+const SIDEBAR_ROUTES: Record<string, string> = { settings: "/settings", dashboard: "/dashboard", history: "/projects", skills: "/skills", profile: "/profile", chat: "/chat" };
 
 const HSTATUS: Record<string, { label: string; color: string; dot: string }> = {
   running:  { label: "Running", color: "var(--st-working)", dot: "working" },
