@@ -65,7 +65,7 @@ function useTweaks(defaults: Tweaks): [Tweaks, (k: keyof Tweaks, v: string | num
   return [t, setTweak];
 }
 
-const SIDEBAR_ROUTES: Record<string, string> = { settings: "/settings", dashboard: "/dashboard", history: "/projects", skills: "/skills" };
+const SIDEBAR_ROUTES: Record<string, string> = { settings: "/settings", dashboard: "/dashboard", history: "/projects", skills: "/skills", profile: "/profile", chat: "/chat" };
 
 function ActivityArea({ data, color = "var(--accent)" }: { data: number[]; color?: string }) {
   const W = 640, H = 170, pad = 8;
