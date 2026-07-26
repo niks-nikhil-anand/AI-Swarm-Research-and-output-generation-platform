@@ -118,10 +118,10 @@ export default function ProjectDetailPage({ projectId }: { projectId: string }) 
   }, [theme]);
 
   const openProject = (id: string) => router.push(`/projects/${id}`);
-  const go = (view: string) => router.push(ROUTES[view] || "/");
+  const go = (view: string) => router.push(ROUTES[view] || "/new-swarm");
   const shell = (content: ReactNode, title = "Project") => (
     <div style={{ height: "100vh", display: "flex", background: "var(--bg)", color: "var(--text)" } as CSSProperties}>
-      <Sidebar view="session" activeSession={projectId} onNew={() => router.push("/")} onGo={({ view }) => go(view)} onOpenSession={openProject} />
+      <Sidebar view="session" activeSession={projectId} onNew={() => router.push("/new-swarm")} onGo={({ view }) => go(view)} onOpenSession={openProject} />
       <main style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         <TopBar stages={null} stage="project" reached={[]} onJump={() => {}} status={null} title={title} theme={theme} onTheme={() => setTheme((value) => value === "dark" ? "light" : "dark")} />
         {content}
@@ -139,7 +139,7 @@ export default function ProjectDetailPage({ projectId }: { projectId: string }) 
 
   const overview = (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      {project.status === "Running" && <Card style={{ padding: 20, borderColor: "var(--accent-line)" }}><div style={{ display: "flex", alignItems: "center", gap: 14 }}><span style={{ width: 42, height: 42, borderRadius: 12, display: "grid", placeItems: "center", background: "var(--accent-soft)", color: "var(--accent)" }}><Icon name="activity" size={20} /></span><div style={{ flex: 1 }}><div className="h4">Research is in progress</div><div className="muted" style={{ fontSize: 12.5, marginTop: 3 }}>{completedAgents} of {project.agents.length} agents complete · {overall}% overall</div></div><Btn kind="primary" icon="activity" onClick={() => router.push("/")}>Open live run</Btn></div></Card>}
+      {project.status === "Running" && <Card style={{ padding: 20, borderColor: "var(--accent-line)" }}><div style={{ display: "flex", alignItems: "center", gap: 14 }}><span style={{ width: 42, height: 42, borderRadius: 12, display: "grid", placeItems: "center", background: "var(--accent-soft)", color: "var(--accent)" }}><Icon name="activity" size={20} /></span><div style={{ flex: 1 }}><div className="h4">Research is in progress</div><div className="muted" style={{ fontSize: 12.5, marginTop: 3 }}>{completedAgents} of {project.agents.length} agents complete · {overall}% overall</div></div><Btn kind="primary" icon="activity" onClick={() => router.push("/new-swarm")}>Open live run</Btn></div></Card>}
       {project.status === "Failed" && <Card style={{ padding: 20, borderColor: "color-mix(in oklab, var(--st-error) 35%, transparent)" }}><div style={{ display: "flex", gap: 12 }}><Icon name="alert-circle" size={20} color="var(--st-error)" /><div><div className="h4">This run failed</div><p className="muted" style={{ fontSize: 13, marginTop: 5 }}>Completed research has been preserved. Open the Agents or Activity tab to locate the failed step.</p></div></div></Card>}
       <Card style={{ padding: 22 }}>
         <div className="eyebrow">Executive summary</div>
@@ -196,13 +196,13 @@ export default function ProjectDetailPage({ projectId }: { projectId: string }) 
         <div style={{ minWidth: 0 }}><h1 style={{ fontSize: 16, fontWeight: 650, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 520 }}>{project.title}</h1><div className="faint" style={{ fontSize: 11.5, marginTop: 2 }}>{format} · {formatDate(project.createdAt)}</div></div>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: status.color, fontSize: 12, fontWeight: 600 }}><StatusDot status={status.dot} size={7} />{status.label}</span>
         <div style={{ flex: 1 }} />
-        {project.status === "Running" && <Btn kind="primary" icon="activity" onClick={() => router.push("/")}>Open live run</Btn>}
+        {project.status === "Running" && <Btn kind="primary" icon="activity" onClick={() => router.push("/new-swarm")}>Open live run</Btn>}
         {project.status !== "Running" && project.timeline.length > 0 && <Btn kind="secondary" icon="play" onClick={() => setTab("replay")}>Replay run</Btn>}
-        {project.status === "Failed" && <Btn kind="primary" icon="reload" onClick={() => router.push("/")}>Retry from setup</Btn>}
+        {project.status === "Failed" && <Btn kind="primary" icon="reload" onClick={() => router.push("/new-swarm")}>Retry from setup</Btn>}
         {project.status === "Complete" && (
           <>
             <Btn kind="primary" icon="eye" onClick={() => setTab("output")}>View output</Btn>
-            <Btn kind="secondary" icon="duplicate" onClick={() => router.push("/")}>Clone &amp; rerun</Btn>
+            <Btn kind="secondary" icon="duplicate" onClick={() => router.push("/new-swarm")}>Clone &amp; rerun</Btn>
           </>
         )}
       </div>
