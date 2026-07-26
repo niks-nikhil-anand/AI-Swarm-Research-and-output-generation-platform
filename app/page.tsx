@@ -44,6 +44,7 @@ export default function Home() {
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <Link href="/dashboard" style={navLinkStyle}>Dashboard</Link>
+              <Link href="/chat" style={navLinkStyle}>Chat</Link>
               <Link href="/projects" style={navLinkStyle}>Projects</Link>
               <Link href="/new-swarm" style={primaryLinkStyle}>New Swarm</Link>
             </div>
@@ -60,6 +61,7 @@ export default function Home() {
               </p>
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 32 }}>
                 <Link href="/new-swarm" style={heroButtonStyle}><Icon name="plus" size={16} />Start a new swarm</Link>
+                <Link href="/chat" style={secondaryButtonStyle}><Icon name="message-square" size={16} />Open chat</Link>
                 <Link href="/projects" style={secondaryButtonStyle}><Icon name="folder" size={16} />View projects</Link>
               </div>
             </div>
