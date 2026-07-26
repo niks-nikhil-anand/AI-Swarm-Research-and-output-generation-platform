@@ -5,6 +5,9 @@
 import { useState, useEffect, useRef, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
+import googleIcon from "../../public/social-icon/google.png";
+import githubIcon from "../../public/social-icon/github.png";
 import { SwarmMark, Btn, Icon } from "../../components/swarm/ui";
 
 function SwarmBackdrop({ density = 46 }: { density?: number }) {
@@ -82,6 +85,25 @@ function PasswordField({ value, onChange, placeholder, field }: {
   );
 }
 
+function SocialLoginButton({ icon, label }: { icon: "google" | "github"; label: string }) {
+  const iconSrc = icon === "google" ? googleIcon : githubIcon;
+  return (
+    <button
+      type="button"
+      style={{
+        height: 44, flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 9,
+        borderRadius: "var(--r-sm)", border: "1px solid var(--border)", background: "var(--surface)",
+        color: "var(--text)", fontFamily: "var(--font)", fontSize: 13.5, fontWeight: 600, cursor: "pointer",
+      }}
+    >
+      <span style={{ width: 24, height: 24, borderRadius: 999, background: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <Image src={iconSrc} alt="" width={18} height={18} style={{ display: "block", objectFit: "contain" }} />
+      </span>
+      {label}
+    </button>
+  );
+}
+
 export default function RegisterPage() {
   const router = useRouter();
   const [name, setName] = useState("");
@@ -129,23 +151,25 @@ export default function RegisterPage() {
       <div className="rise" style={{ position: "relative", width: 392, maxWidth: "92vw" }}>
         <div className="glass-strong" style={{ borderRadius: "var(--r-xl)", padding: 32, boxShadow: "var(--shadow-lg)" }}>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, marginBottom: 26 }}>
-            <div style={{ width: 56, height: 56, borderRadius: "var(--r-lg)", background: "var(--elevated)", border: "1px solid var(--glass-border)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 24px -6px var(--accent-glow)" }}>
-              <SwarmMark size={32} />
+            <div style={{ width: 72, height: 72, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <SwarmMark size={52} glow={false} />
             </div>
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.5px" }}>Create your account</div>
-              <p className="muted" style={{ fontSize: 13.5, marginTop: 4 }}>Set a goal. Approve a team. Watch it work.</p>
+              <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.5px" }}>Create your AI Swarm account</div>
+              <p className="muted" style={{ fontSize: 13.5, marginTop: 6, lineHeight: 1.45 }}>
+                Build a workspace where coordinated AI agents research, verify sources, and generate polished outputs.
+              </p>
             </div>
           </div>
 
           <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <div>
               <label className="eyebrow" style={{ display: "block", marginBottom: 6, textTransform: "none", letterSpacing: 0, fontSize: 12.5, fontWeight: 600, color: "var(--text-2)" }}>Full name</label>
-              <input value={name} onChange={(e) => setName(e.target.value)} autoFocus placeholder="Avery Chen" style={field} type="text" />
+              <input value={name} onChange={(e) => setName(e.target.value)} autoFocus placeholder="Your full name" style={field} type="text" />
             </div>
             <div>
               <label className="eyebrow" style={{ display: "block", marginBottom: 6, textTransform: "none", letterSpacing: 0, fontSize: 12.5, fontWeight: 600, color: "var(--text-2)" }}>Email</label>
-              <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="avery@anthropic.com" style={field} type="email" />
+              <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" style={field} type="email" />
             </div>
             <div>
               <label className="eyebrow" style={{ display: "block", marginBottom: 6, textTransform: "none", letterSpacing: 0, fontSize: 12.5, fontWeight: 600, color: "var(--text-2)" }}>Password</label>
@@ -153,7 +177,7 @@ export default function RegisterPage() {
             </div>
             <div>
               <label className="eyebrow" style={{ display: "block", marginBottom: 6, textTransform: "none", letterSpacing: 0, fontSize: 12.5, fontWeight: 600, color: "var(--text-2)" }}>Confirm password</label>
-              <PasswordField value={confirmPw} onChange={setConfirmPw} field={field} />
+              <PasswordField value={confirmPw} onChange={setConfirmPw} placeholder="Confirm your password" field={field} />
             </div>
 
             {error && (
@@ -172,7 +196,10 @@ export default function RegisterPage() {
             <span style={{ fontSize: 11, color: "var(--faint)" }}>or</span>
             <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
           </div>
-          <Btn kind="secondary" size="lg" full icon="key" onClick={() => submit()}>Continue with SSO</Btn>
+          <div style={{ display: "flex", gap: 10 }}>
+            <SocialLoginButton icon="google" label="Google" />
+            <SocialLoginButton icon="github" label="GitHub" />
+          </div>
 
           <p className="faint" style={{ textAlign: "center", fontSize: 12, marginTop: 20 }}>
             Already have an account? <Link href="/login" style={{ color: "var(--accent-2)", fontWeight: 600 }}>Sign in</Link>
