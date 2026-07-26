@@ -79,6 +79,40 @@ model User {
   skills              Skill[]
   agentDefinitions    AgentDefinition[]
   projects            Project[]
+  chats               Chat[]
+}
+
+// AI Nexus Chat conversation owned by one user.
+model Chat {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  model     String?
+  pinned    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages ChatMessage[]
+
+  @@index([userId])
+  @@index([updatedAt])
+}
+
+// One message inside an AI Nexus Chat conversation.
+model ChatMessage {
+  id        String   @id @default(cuid())
+  chatId    String
+  role      String
+  content   String   @db.Text
+  model     String?
+  tokens    Int?
+  createdAt DateTime @default(now())
+
+  chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  @@index([chatId])
+  @@index([createdAt])
 }
 
 // Maps to Provider / Settings' Intelligence card.
