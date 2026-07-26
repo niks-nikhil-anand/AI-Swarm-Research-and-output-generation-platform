@@ -200,7 +200,7 @@ export default function LoginPage() {
         setLoading(false);
         return;
       }
-      router.push("/");
+      router.push("/new-swarm");
     } catch {
       setError("Couldn't reach the server. Try again.");
       setLoading(false);

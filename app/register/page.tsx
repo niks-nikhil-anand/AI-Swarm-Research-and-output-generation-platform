@@ -249,7 +249,7 @@ export default function RegisterPage() {
         setLoading(false);
         return;
       }
-      router.push("/");
+      router.push("/new-swarm");
     } catch {
       setError("Couldn't reach the server. Try again.");
       setLoading(false);
