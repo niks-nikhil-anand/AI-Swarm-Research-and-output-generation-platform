@@ -40,7 +40,7 @@ interface ProjectDetail {
   timeline: TimelineRecord[]; searchResults: SearchRecord[]; evidence: EvidenceRecord[];
 }
 
-const ROUTES: Record<string, string> = { settings: "/settings", dashboard: "/dashboard", history: "/projects", skills: "/skills" };
+const ROUTES: Record<string, string> = { settings: "/settings", dashboard: "/dashboard", history: "/projects", skills: "/skills", profile: "/profile", chat: "/chat" };
 const FORMAT_LABELS: Record<string, string> = { deck: "PowerPoint", pptx: "PowerPoint", pdf: "PDF report", docx: "Word document", blog: "Blog post", markdown: "Markdown", md: "Markdown", summary: "Executive summary", exec: "Executive Summary", repo: "Code Repo" };
 const STATUS: Record<ProjectStatus, { label: string; dot: string; color: string }> = {
   Draft: { label: "Draft", dot: "idle", color: "var(--muted)" },

@@ -23,7 +23,7 @@ const STAGES: Stage[] = [
   { key: "history", label: "History" },
 ];
 const STAGE_STATUS: Record<string, string> = { define: "drafting", roles: "awaiting", run: "running", output: "complete" };
-const SIDEBAR_ROUTES: Record<string, string> = { settings: "/settings", dashboard: "/dashboard", history: "/projects", skills: "/skills" };
+const SIDEBAR_ROUTES: Record<string, string> = { settings: "/settings", dashboard: "/dashboard", history: "/projects", skills: "/skills", profile: "/profile", chat: "/chat" };
 const DEFAULT_BRIEF: ProjectBrief = {
   goal: "",
   format: "pptx",
