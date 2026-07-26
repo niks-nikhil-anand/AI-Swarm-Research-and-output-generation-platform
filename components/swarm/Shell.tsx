@@ -51,14 +51,14 @@ export function useCurrentUser(): CurrentUser | null {
   return user;
 }
 
-function NavItem({ icon, label, active, onClick, count, badge }: {
-  icon: string; label: string; active?: boolean; onClick?: () => void; count?: number; badge?: boolean;
+function NavItem({ icon, label, active, onClick, count, badge, compact }: {
+  icon: string; label: string; active?: boolean; onClick?: () => void; count?: number; badge?: boolean; compact?: boolean;
 }) {
   const [h, setH] = useState(false);
   return (
     <button onClick={onClick} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
       style={{
-        display: "flex", alignItems: "center", gap: 10, width: "100%", height: 36, padding: "0 10px",
+        display: "flex", alignItems: "center", justifyContent: compact ? "center" : "flex-start", gap: 10, width: "100%", height: 36, padding: compact ? 0 : "0 10px",
         border: "none", cursor: "pointer", borderRadius: "var(--r-sm)", textAlign: "left",
         fontFamily: "var(--font)", fontSize: 13.5, fontWeight: 500,
         background: active ? "var(--accent-soft)" : h ? "var(--elevated)" : "transparent",
@@ -66,8 +66,8 @@ function NavItem({ icon, label, active, onClick, count, badge }: {
         transition: "background 130ms, color 130ms",
       }}>
       <Icon name={icon} size={16} />
-      <span style={{ flex: 1 }}>{label}</span>
-      {count != null && <span className="mono" style={{ fontSize: 11, color: "var(--faint)" }}>{count}</span>}
+      {!compact && <span style={{ flex: 1 }}>{label}</span>}
+      {!compact && count != null && <span className="mono" style={{ fontSize: 11, color: "var(--faint)" }}>{count}</span>}
       {badge && <StatusDot status="working" size={7} />}
     </button>
   );
@@ -79,30 +79,43 @@ export function Sidebar({ view, activeSession, onNew, onGo, onOpenSession }: {
 }) {
   const user = useCurrentUser();
   const projects = useRecentProjects();
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  async function signOut() {
+    await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+    window.location.href = "/login";
+  }
   return (
     <aside style={{
-      width: "var(--nav-w)", flexShrink: 0, height: "100%", boxSizing: "border-box",
+      width: collapsed ? 72 : "var(--nav-w)", flexShrink: 0, height: "100%", boxSizing: "border-box",
       background: "var(--bg-2)", borderRight: "1px solid var(--border)",
       display: "flex", flexDirection: "column", padding: "14px 12px",
+      transition: "width 180ms cubic-bezier(0.22,1,0.36,1)",
     }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "2px 6px 14px" }}>
-        <Logo />
-        <IconBtn name="layers" size={30} title="Collapse" />
+        <Logo collapsed={collapsed} />
+        {!collapsed && <IconBtn name="layers" size={30} title="Collapse sidebar" onClick={() => setCollapsed(true)} />}
       </div>
 
-      <Btn kind="primary" icon="plus" full onClick={onNew} style={{ marginBottom: 14 }}>New project</Btn>
+      {collapsed ? (
+        <IconBtn name="menu" size={36} title="Expand sidebar" onClick={() => setCollapsed(false)} style={{ margin: "0 auto 14px" }} />
+      ) : (
+        <Btn kind="primary" icon="plus" full onClick={onNew} style={{ marginBottom: 14 }}>New project</Btn>
+      )}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 2, marginBottom: 14 }}>
-        <NavItem icon="dashboard" label="Dashboard" active={view === "dashboard"} onClick={() => onGo({ view: "dashboard" })} />
-        <NavItem icon="history" label="All projects" active={view === "history"} onClick={() => onGo({ view: "history" })} count={projects.length} />
-        <NavItem icon="tools" label="Skills" active={view === "skills"} onClick={() => onGo({ view: "skills" })} />
+        <NavItem icon="dashboard" label="Dashboard" active={view === "dashboard"} onClick={() => onGo({ view: "dashboard" })} compact={collapsed} />
+        <NavItem icon="message-square" label="Chat" active={view === "chat"} onClick={() => onGo({ view: "chat" })} badge compact={collapsed} />
+        <NavItem icon="history" label="All projects" active={view === "history"} onClick={() => onGo({ view: "history" })} count={projects.length} compact={collapsed} />
+        <NavItem icon="tools" label="Skills" active={view === "skills"} onClick={() => onGo({ view: "skills" })} compact={collapsed} />
       </div>
 
-      <div className="eyebrow" style={{ padding: "0 8px 8px" }}>Recent sessions</div>
+      {!collapsed && <div className="eyebrow" style={{ padding: "0 8px 8px" }}>Recent sessions</div>}
       <div style={{ display: "flex", flexDirection: "column", gap: 2, overflow: "auto", flex: 1, margin: "0 -4px", padding: "0 4px" }}>
-        {projects.length === 0 && <p className="faint" style={{ fontSize: 12, padding: "6px 8px" }}>No projects yet.</p>}
+        {!collapsed && projects.length === 0 && <p className="faint" style={{ fontSize: 12, padding: "6px 8px" }}>No projects yet.</p>}
         {projects.slice(0, 6).map((p) => {
           const active = view === "session" && activeSession === p.id;
+          if (collapsed) return null;
           return (
             <button key={p.id} onClick={() => onOpenSession(p.id)}
               style={{
@@ -121,17 +134,52 @@ export function Sidebar({ view, activeSession, onNew, onGo, onOpenSession }: {
       </div>
 
       <div style={{ borderTop: "1px solid var(--border)", paddingTop: 8, marginTop: 8, display: "flex", flexDirection: "column", gap: 2 }}>
-        <NavItem icon="settings" label="Settings" active={view === "settings"} onClick={() => onGo({ view: "settings" })} />
-        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 8px 4px", marginTop: 4 }}>
+        <NavItem icon="settings" label="Settings" active={view === "settings"} onClick={() => onGo({ view: "settings" })} compact={collapsed} />
+        <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 10, padding: "8px 8px 4px", marginTop: 4 }}>
           <div style={{ width: 30, height: 30, borderRadius: "var(--r-pill)", background: "linear-gradient(135deg, var(--accent-2), var(--accent))", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>{user ? initialsOf(user) : ""}</div>
-          <div style={{ flex: 1, minWidth: 0 }}>
+          {!collapsed && <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{user?.name || (user ? "Swarm user" : "Loading…")}</div>
             <div style={{ fontSize: 11, color: "var(--faint)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{user?.email || ""}</div>
-          </div>
-          <IconBtn name="more-horizontal" size={28} title="Account" />
+          </div>}
+          {!collapsed && <IconBtn name="more-horizontal" size={28} title="Account menu" active={accountOpen} onClick={() => setAccountOpen((value) => !value)} />}
+          {accountOpen && (
+            <div
+              style={{
+                position: "absolute", right: 6, bottom: 46, width: 178, padding: 6, zIndex: 40,
+                borderRadius: "var(--r-sm)", border: "1px solid var(--border)", background: "var(--surface)",
+                boxShadow: "var(--shadow-pop)",
+              }}
+            >
+              <AccountMenuItem icon="user" label="Profile" onClick={() => { setAccountOpen(false); onGo({ view: "profile" }); }} />
+              <AccountMenuItem icon="settings" label="Settings" onClick={() => { setAccountOpen(false); onGo({ view: "settings" }); }} />
+              <div style={{ height: 1, background: "var(--border)", margin: "5px 4px" }} />
+              <AccountMenuItem icon="lock" label="Logout" danger onClick={signOut} />
+            </div>
+          )}
         </div>
       </div>
     </aside>
+  );
+}
+
+function AccountMenuItem({ icon, label, onClick, danger }: { icon: string; label: string; onClick: () => void; danger?: boolean }) {
+  const [h, setH] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      onMouseEnter={() => setH(true)}
+      onMouseLeave={() => setH(false)}
+      style={{
+        width: "100%", height: 34, display: "flex", alignItems: "center", gap: 9, padding: "0 9px",
+        border: "none", borderRadius: "var(--r-xs)", background: h ? "var(--elevated)" : "transparent",
+        color: danger ? "var(--st-error)" : "var(--text-2)", cursor: "pointer", fontFamily: "var(--font)",
+        fontSize: 13, fontWeight: 600, textAlign: "left",
+      }}
+    >
+      <Icon name={icon} size={14} />
+      {label}
+    </button>
   );
 }
 
