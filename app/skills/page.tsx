@@ -232,7 +232,7 @@ export default function SkillsPage() {
   const [modal, setModal] = useState(false);
   const [communitySkills, setCommunitySkills] = useState<CommunitySkill[]>([]);
   const [communityLoading, setCommunityLoading] = useState(true);
-  const backHome = () => router.push("/");
+  const backHome = () => router.push("/new-swarm");
   const openProject = (id: string) => router.push(`/projects/${id}`);
 
   useEffect(() => {
@@ -275,7 +275,7 @@ export default function SkillsPage() {
   return (
     <div style={{ height: "100vh", display: "flex", background: "var(--bg)", color: "var(--text)" } as CSSProperties}>
       <Sidebar view="skills" activeSession={null}
-        onNew={backHome} onGo={({ view }) => router.push(SIDEBAR_ROUTES[view] || "/")} onOpenSession={openProject} />
+        onNew={backHome} onGo={({ view }) => router.push(SIDEBAR_ROUTES[view] || "/new-swarm")} onOpenSession={openProject} />
       <main style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden" }}>
         <TopBar stages={null} stage="skills" reached={["skills"]} onJump={() => {}} status={null} title="Skills" theme={t.theme} onTheme={() => setTweak("theme", t.theme === "dark" ? "light" : "dark")} />
         <div style={{ overflow: "auto", height: "100%", padding: "32px 24px" }}>

@@ -145,7 +145,7 @@ export default function ProjectsPage() {
   const [previewEmpty, setPreviewEmpty] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const backHome = () => router.push("/");
+  const backHome = () => router.push("/new-swarm");
   const openProject = (id: string) => router.push(`/projects/${id}`);
 
   useEffect(() => {
@@ -162,7 +162,7 @@ export default function ProjectsPage() {
   return (
     <div style={{ height: "100vh", display: "flex", background: "var(--bg)", color: "var(--text)" } as CSSProperties}>
       <Sidebar view="history" activeSession={null}
-        onNew={backHome} onGo={({ view }) => router.push(SIDEBAR_ROUTES[view] || "/")} onOpenSession={openProject} />
+        onNew={backHome} onGo={({ view }) => router.push(SIDEBAR_ROUTES[view] || "/new-swarm")} onOpenSession={openProject} />
       <main style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden" }}>
         <TopBar stages={null} stage="history" reached={["history"]} onJump={() => {}} status={null} title="Projects" theme={t.theme} onTheme={() => setTweak("theme", t.theme === "dark" ? "light" : "dark")} />
         <div style={{ overflow: "auto", height: "100%", padding: "32px 24px" }}>
