@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { Badge, Btn, Icon, IconBtn } from "../../components/swarm/ui";
 import { Sidebar, TopBar } from "../../components/swarm/Shell";
@@ -15,34 +15,67 @@ const SIDEBAR_ROUTES: Record<string, string> = {
 };
 
 const MODELS = [
-  { id: "deepseek-v4-flash", label: "DeepSeek V4 Flash", provider: "NVIDIA", tone: "success" as const },
-  { id: "llama-3.3-70b", label: "Llama 3.3 70B", provider: "OpenRouter", tone: "accent" as const },
-  { id: "gpt-oss-120b", label: "GPT-OSS 120B", provider: "OpenRouter", tone: "cyan" as const },
+  { id: "openai/gpt-oss-20b:free", label: "GPT-OSS 20B", provider: "OpenRouter", tone: "cyan" as const },
+  { id: "meta-llama/llama-3.3-70b-instruct:free", label: "Llama 3.3 70B", provider: "OpenRouter", tone: "accent" as const },
+  { id: "openai/gpt-oss-120b:free", label: "GPT-OSS 120B", provider: "OpenRouter", tone: "success" as const },
 ];
 
 const COMPOSER_MODES = ["Research", "Draft", "Verify"];
 
-type ChatMessage = { id: string; role: "user" | "assistant"; content: string; time: Date };
-type Conversation = { id: string; title: string; updated: string; messages: ChatMessage[] };
+type ChatMessage = { id: string; role: "user" | "assistant"; content: string; time: Date; model?: string | null };
+type Conversation = { id: string; title: string; updated: string; model?: string | null; messages: ChatMessage[] };
+type ApiChatMessage = { id: string; role: string; content: string; model: string | null; tokens: number | null; createdAt: string };
+type ApiChat = { id: string; title: string; model: string | null; pinned: boolean; createdAt: string; updatedAt: string; messageCount?: number; messages: ApiChatMessage[] };
 
-const seedConversations: Conversation[] = [
-  {
-    id: "c1",
-    title: "AI market research brief",
-    updated: "Today",
-    messages: [
-      { id: "m1", role: "assistant", content: "Welcome to AI Nexus Chat. Ask anything, refine a research direction, or turn a prompt into a swarm-ready plan.", time: new Date() },
-    ],
-  },
-  {
-    id: "c2",
-    title: "Deck outline ideas",
-    updated: "Yesterday",
-    messages: [
-      { id: "m2", role: "assistant", content: "I can help structure your verified findings into a slide narrative, executive summary, or content package.", time: new Date() },
-    ],
-  },
-];
+async function readJson<T>(response: Response): Promise<T | null> {
+  const text = await response.text();
+  if (!text.trim()) return null;
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return null;
+  }
+}
+
+function responseError(data: unknown, fallback: string) {
+  if (data && typeof data === "object" && "error" in data && typeof data.error === "string") return data.error;
+  return fallback;
+}
+
+function formatUpdated(value: string) {
+  const date = new Date(value);
+  const diff = Date.now() - date.getTime();
+  if (diff < 60_000) return "Now";
+  if (diff < 3_600_000) return `${Math.max(1, Math.round(diff / 60_000))}m ago`;
+  if (diff < 86_400_000) return `${Math.round(diff / 3_600_000)}h ago`;
+  return date.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+
+function toConversation(chat: ApiChat): Conversation {
+  return {
+    id: chat.id,
+    title: chat.title,
+    updated: formatUpdated(chat.updatedAt),
+    model: chat.model,
+    messages: chat.messages.map((message) => ({
+      id: message.id,
+      role: message.role === "user" ? "user" : "assistant",
+      content: message.content,
+      model: message.model,
+      time: new Date(message.createdAt),
+    })),
+  };
+}
+
+function messageFromApi(message: ApiChatMessage): ChatMessage {
+  return {
+    id: message.id,
+    role: message.role === "user" ? "user" : "assistant",
+    content: message.content,
+    model: message.model,
+    time: new Date(message.createdAt),
+  };
+}
 
 export default function ChatPage() {
   const router = useRouter();
@@ -51,21 +84,48 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [chatSidebarOpen, setChatSidebarOpen] = useState(true);
-  const [conversations, setConversations] = useState<Conversation[]>(seedConversations);
-  const [activeId, setActiveId] = useState(seedConversations[0].id);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const active = conversations.find((item) => item.id === activeId) || conversations[0];
+  const active = conversations.find((item) => item.id === activeId) || null;
   const model = MODELS.find((item) => item.id === modelId) || MODELS[0];
+
+  const loadChats = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/chats", { cache: "no-store" });
+      const data = await readJson<{ chats: ApiChat[]; error?: string }>(response);
+      if (!response.ok || !data) throw new Error(responseError(data, "Could not load chats"));
+      const nextChats = (data.chats as ApiChat[]).map(toConversation);
+      setConversations(nextChats);
+      setActiveId((current) => current && nextChats.some((chat) => chat.id === current) ? current : nextChats[0]?.id || null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not load chats");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [active.messages, isGenerating]);
+    const timer = window.setTimeout(() => {
+      void loadChats();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [loadChats]);
 
-  const tokenEstimate = useMemo(() => active.messages.reduce((sum, message) => sum + Math.max(1, Math.round(message.content.length / 4.2)), 0), [active.messages]);
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [active?.messages, isGenerating]);
+
+  const tokenEstimate = useMemo(() => (active?.messages || []).reduce((sum, message) => sum + Math.max(1, Math.round(message.content.length / 4.2)), 0), [active?.messages]);
 
   function openProject(id: string) {
     router.push(`/projects/${id}`);
@@ -75,42 +135,92 @@ export default function ChatPage() {
     router.push(SIDEBAR_ROUTES[view] || "/new-swarm");
   }
 
-  function newChat() {
-    const next: Conversation = {
-      id: `chat-${Date.now()}`,
-      title: "New AI Nexus chat",
-      updated: "Now",
-      messages: [
-        { id: `msg-${Date.now()}`, role: "assistant", content: "Start with a question, a research goal, or rough notes. I will help shape it into something useful.", time: new Date() },
-      ],
-    };
-    setConversations((items) => [next, ...items]);
-    setActiveId(next.id);
+  async function createChat(title = "New AI Nexus chat") {
+    const response = await fetch("/api/chats", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, model: modelId }),
+    });
+    const data = await readJson<{ chat: ApiChat; error?: string }>(response);
+    if (!response.ok || !data) throw new Error(responseError(data, "Could not create chat"));
+    const chat = toConversation(data.chat as ApiChat);
+    setConversations((items) => [chat, ...items]);
+    setActiveId(chat.id);
+    return chat;
   }
 
-  function sendMessage(text = input) {
+  async function newChat() {
+    if (isGenerating) return;
+    setError(null);
+    try {
+      await createChat();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not create chat");
+    }
+  }
+
+  async function sendMessage(text = input) {
     const content = text.trim();
     if (!content || isGenerating) return;
-    const userMessage: ChatMessage = { id: `msg-${Date.now()}`, role: "user", content, time: new Date() };
-    setInput("");
-    setIsGenerating(true);
-    setConversations((items) => items.map((chat) => chat.id === active.id ? {
-      ...chat,
-      title: chat.messages.length <= 1 ? content.slice(0, 46) : chat.title,
-      updated: "Now",
-      messages: [...chat.messages, userMessage],
-    } : chat));
 
-    window.setTimeout(() => {
-      const reply: ChatMessage = {
-        id: `msg-${Date.now()}-assistant`,
-        role: "assistant",
-        content: "UI preview response: this chat will connect to streaming model APIs next. From here, AI Nexus Chat can answer questions, draft research plans, summarize project evidence, and launch work into the swarm builder.",
-        time: new Date(),
-      };
-      setConversations((items) => items.map((chat) => chat.id === active.id ? { ...chat, messages: [...chat.messages, reply] } : chat));
+    setInput("");
+    setError(null);
+    setIsGenerating(true);
+
+    let chat = active;
+    try {
+      if (!chat) chat = await createChat(content.slice(0, 52) || "New AI Nexus chat");
+
+      const chatId = chat.id;
+      const userMessage: ChatMessage = { id: `local-${Date.now()}`, role: "user", content, model: modelId, time: new Date() };
+      const nextMessages = [...chat.messages, userMessage];
+      setConversations((items) => items.map((item) => item.id === chatId ? {
+        ...item,
+        title: item.messages.length === 0 || item.title === "New AI Nexus chat" ? content.slice(0, 52) : item.title,
+        updated: "Now",
+        model: modelId,
+        messages: nextMessages,
+      } : item));
+
+      const controller = new AbortController();
+      abortRef.current = controller;
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({
+          chatId,
+          model: modelId,
+          messages: nextMessages.map((message) => ({ role: message.role, content: message.content })),
+          temperature: 0.7,
+          top_p: 0.95,
+          max_tokens: 2048,
+        }),
+      });
+      const data = await readJson<{ message: ApiChatMessage; error?: string }>(response);
+      if (!response.ok || !data) throw new Error(responseError(data, "Chat request failed"));
+
+      const assistantMessage = messageFromApi(data.message as ApiChatMessage);
+      setConversations((items) => items.map((item) => item.id === chatId ? {
+        ...item,
+        updated: "Now",
+        messages: [...nextMessages, assistantMessage],
+      } : item));
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        setError("Response stopped.");
+      } else {
+        setError(err instanceof Error ? err.message : "Chat request failed");
+      }
+    } finally {
+      abortRef.current = null;
       setIsGenerating(false);
-    }, 650);
+    }
+  }
+
+  function stopGeneration() {
+    abortRef.current?.abort();
+    setIsGenerating(false);
   }
 
   return (
@@ -133,11 +243,18 @@ export default function ChatPage() {
           <section style={{ position: "relative", display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0, background: "var(--bg)" }}>
             <div style={{ flex: 1, overflow: "auto", padding: "24px 24px 138px" }}>
               <div style={{ maxWidth: 820, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
-                {active.messages.map((message) => <MessageBubble key={message.id} message={message} model={model.label} />)}
+                {loading && <EmptyState icon="loader" title="Loading conversations" text="Getting your saved AI Nexus chats ready." />}
+                {!loading && !active && <EmptyState icon="message-square" title="Start a real chat" text="Ask AI Nexus to research, verify, summarize, or turn an idea into a swarm-ready project." />}
+                {active?.messages.map((message) => <MessageBubble key={message.id} message={message} model={model.label} />)}
                 {isGenerating && (
                   <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--muted)", fontSize: 13 }}>
                     <span style={{ width: 12, height: 12, border: "2px solid var(--accent)", borderTopColor: "transparent", borderRadius: 999, animation: "swarm-spin 0.7s linear infinite" }} />
                     AI Nexus is thinking...
+                  </div>
+                )}
+                {error && (
+                  <div style={{ border: "1px solid color-mix(in oklab, #ff6b6b 38%, var(--border))", background: "color-mix(in oklab, #ff6b6b 10%, var(--surface))", color: "var(--text)", borderRadius: "var(--r-sm)", padding: "10px 12px", fontSize: 13 }}>
+                    {error}
                   </div>
                 )}
                 <div ref={bottomRef} />
@@ -201,7 +318,7 @@ export default function ChatPage() {
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <span className="faint" style={{ fontSize: 11.5 }}>Enter to send · Shift Enter for newline</span>
-                      <Btn kind="primary" icon={isGenerating ? "x" : "arrow-up"} onClick={() => isGenerating ? setIsGenerating(false) : sendMessage()} style={{ minWidth: 92 }}>{isGenerating ? "Stop" : "Send"}</Btn>
+                      <Btn kind="primary" icon={isGenerating ? "x" : "arrow-up"} onClick={() => isGenerating ? stopGeneration() : sendMessage()} style={{ minWidth: 92 }}>{isGenerating ? "Stop" : "Send"}</Btn>
                     </div>
                   </div>
                 </div>
@@ -217,10 +334,14 @@ export default function ChatPage() {
               {chatSidebarOpen && <Badge tone="neutral" style={{ marginLeft: "auto" }}>{conversations.length}</Badge>}
             </div>
             {chatSidebarOpen ? <div style={{ display: "flex", flexDirection: "column", gap: 8, overflow: "auto", height: "calc(100% - 42px)" }}>
+              {!loading && conversations.length === 0 && <div className="faint" style={{ fontSize: 12, padding: 10 }}>No conversations yet.</div>}
               {conversations.map((chat) => {
-                const selected = chat.id === active.id;
+                const selected = chat.id === active?.id;
                 return (
-                  <button key={chat.id} onClick={() => setActiveId(chat.id)} style={{
+                  <button key={chat.id} onClick={() => {
+                    setActiveId(chat.id);
+                    if (chat.model && MODELS.some((item) => item.id === chat.model)) setModelId(chat.model);
+                  }} style={{
                     width: "100%", padding: 12, borderRadius: "var(--r-sm)", border: `1px solid ${selected ? "var(--accent-line)" : "var(--border)"}`,
                     background: selected ? "var(--accent-soft)" : "var(--surface)", color: "var(--text)", cursor: "pointer", textAlign: "left", fontFamily: "var(--font)",
                   }}>
@@ -236,9 +357,12 @@ export default function ChatPage() {
               <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "center" }}>
                 <IconBtn name="plus" size={34} title="New chat" onClick={newChat} />
                 {conversations.slice(0, 5).map((chat) => (
-                  <button key={chat.id} onClick={() => setActiveId(chat.id)} title={chat.title} style={{
-                    width: 34, height: 34, borderRadius: "var(--r-sm)", border: `1px solid ${chat.id === active.id ? "var(--accent-line)" : "var(--border)"}`,
-                    background: chat.id === active.id ? "var(--accent-soft)" : "var(--surface)", color: chat.id === active.id ? "var(--accent-2)" : "var(--muted)",
+                  <button key={chat.id} onClick={() => {
+                    setActiveId(chat.id);
+                    if (chat.model && MODELS.some((item) => item.id === chat.model)) setModelId(chat.model);
+                  }} title={chat.title} style={{
+                    width: 34, height: 34, borderRadius: "var(--r-sm)", border: `1px solid ${chat.id === active?.id ? "var(--accent-line)" : "var(--border)"}`,
+                    background: chat.id === active?.id ? "var(--accent-soft)" : "var(--surface)", color: chat.id === active?.id ? "var(--accent-2)" : "var(--muted)",
                     display: "grid", placeItems: "center", cursor: "pointer",
                   }}>
                     <Icon name="message-square" size={15} />
@@ -250,6 +374,20 @@ export default function ChatPage() {
 
         </div>
       </main>
+    </div>
+  );
+}
+
+function EmptyState({ icon, title, text }: { icon: string; title: string; text: string }) {
+  return (
+    <div style={{ minHeight: 260, display: "grid", placeItems: "center", textAlign: "center", color: "var(--muted)" }}>
+      <div>
+        <div style={{ width: 44, height: 44, borderRadius: "var(--r-md)", display: "grid", placeItems: "center", margin: "0 auto 14px", background: "var(--surface)", border: "1px solid var(--border)" }}>
+          <Icon name={icon} size={18} color="var(--accent-2)" />
+        </div>
+        <div className="h3" style={{ color: "var(--text)", marginBottom: 7 }}>{title}</div>
+        <div style={{ maxWidth: 430, fontSize: 13.5, lineHeight: 1.6 }}>{text}</div>
+      </div>
     </div>
   );
 }
