@@ -2,13 +2,28 @@
 /* ============================================================
    SWARM — App shell (Sidebar + TopBar)
    ============================================================ */
-import { useState, useEffect, type ReactNode } from "react";
+import { useState, useEffect, type CSSProperties, type FormEvent, type ReactNode } from "react";
+import Image from "next/image";
 import { Logo, Icon, IconBtn, Btn, StatusDot, Stepper, type Stage } from "./ui";
 
 export interface CurrentUser { id: string; email: string; name: string | null }
 interface RecentProject { id: string; title: string; status: string; accent: string }
 
 const PROJECT_STATUS_MAP: Record<string, string> = { Draft: "running", Running: "running", Complete: "complete", Failed: "failed" };
+const COFFEE_AMOUNTS = [99, 199, 499, 999, 1999, 2999, 3999, 4999];
+
+const coffeeInputStyle: CSSProperties = {
+  width: "100%",
+  height: 38,
+  borderRadius: "var(--r-sm)",
+  border: "1px solid var(--border)",
+  background: "var(--surface)",
+  color: "var(--text)",
+  padding: "0 12px",
+  fontFamily: "var(--font)",
+  fontSize: 13,
+  outline: "none",
+};
 
 function useRecentProjects(): RecentProject[] {
   const [projects, setProjects] = useState<RecentProject[]>([]);
@@ -81,84 +96,268 @@ export function Sidebar({ view, activeSession, onNew, onGo, onOpenSession }: {
   const projects = useRecentProjects();
   const [accountOpen, setAccountOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [coffeeModal, setCoffeeModal] = useState(false);
+  const [coffeeAmount, setCoffeeAmount] = useState(COFFEE_AMOUNTS[1]);
   async function signOut() {
     await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
     window.location.href = "/login";
   }
+  function openCoffee(amount = coffeeAmount) {
+    setCoffeeAmount(amount);
+    setCoffeeModal(true);
+  }
   return (
-    <aside style={{
-      width: collapsed ? 72 : "var(--nav-w)", flexShrink: 0, height: "100%", boxSizing: "border-box",
-      background: "var(--bg-2)", borderRight: "1px solid var(--border)",
-      display: "flex", flexDirection: "column", padding: "14px 12px",
-      transition: "width 180ms cubic-bezier(0.22,1,0.36,1)",
-    }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "2px 6px 14px" }}>
-        <Logo collapsed={collapsed} />
-        {!collapsed && <IconBtn name="layers" size={30} title="Collapse sidebar" onClick={() => setCollapsed(true)} />}
-      </div>
-
-      {collapsed ? (
-        <IconBtn name="menu" size={36} title="Expand sidebar" onClick={() => setCollapsed(false)} style={{ margin: "0 auto 14px" }} />
-      ) : (
-        <Btn kind="primary" icon="plus" full onClick={onNew} style={{ marginBottom: 14 }}>New project</Btn>
-      )}
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 2, marginBottom: 14 }}>
-        <NavItem icon="dashboard" label="Dashboard" active={view === "dashboard"} onClick={() => onGo({ view: "dashboard" })} compact={collapsed} />
-        <NavItem icon="message-square" label="Chat" active={view === "chat"} onClick={() => onGo({ view: "chat" })} badge compact={collapsed} />
-        <NavItem icon="history" label="All projects" active={view === "history"} onClick={() => onGo({ view: "history" })} count={projects.length} compact={collapsed} />
-        <NavItem icon="tools" label="Skills" active={view === "skills"} onClick={() => onGo({ view: "skills" })} compact={collapsed} />
-      </div>
-
-      {!collapsed && <div className="eyebrow" style={{ padding: "0 8px 8px" }}>Recent sessions</div>}
-      <div style={{ display: "flex", flexDirection: "column", gap: 2, overflow: "auto", flex: 1, margin: "0 -4px", padding: "0 4px" }}>
-        {!collapsed && projects.length === 0 && <p className="faint" style={{ fontSize: 12, padding: "6px 8px" }}>No projects yet.</p>}
-        {projects.slice(0, 6).map((p) => {
-          const active = view === "session" && activeSession === p.id;
-          if (collapsed) return null;
-          return (
-            <button key={p.id} onClick={() => onOpenSession(p.id)}
-              style={{
-                display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "8px 10px",
-                border: "none", cursor: "pointer", borderRadius: "var(--r-sm)", textAlign: "left",
-                background: active ? "var(--elevated)" : "transparent", transition: "background 130ms",
-              }}
-              onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "var(--elevated)"; }}
-              onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}>
-              <span style={{ width: 8, height: 8, borderRadius: 3, background: p.accent, flexShrink: 0, boxShadow: active ? `0 0 8px ${p.accent}` : "none" }} />
-              <span style={{ flex: 1, minWidth: 0, fontSize: 12.5, fontWeight: 500, color: active ? "var(--text)" : "var(--muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.title}</span>
-              {p.status === "running" && <StatusDot status="working" size={6} />}
-            </button>
-          );
-        })}
-      </div>
-
-      <div style={{ borderTop: "1px solid var(--border)", paddingTop: 8, marginTop: 8, display: "flex", flexDirection: "column", gap: 2 }}>
-        <NavItem icon="settings" label="Settings" active={view === "settings"} onClick={() => onGo({ view: "settings" })} compact={collapsed} />
-        <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 10, padding: "8px 8px 4px", marginTop: 4 }}>
-          <div style={{ width: 30, height: 30, borderRadius: "var(--r-pill)", background: "linear-gradient(135deg, var(--accent-2), var(--accent))", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>{user ? initialsOf(user) : ""}</div>
-          {!collapsed && <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{user?.name || (user ? "Swarm user" : "Loading…")}</div>
-            <div style={{ fontSize: 11, color: "var(--faint)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{user?.email || ""}</div>
-          </div>}
-          {!collapsed && <IconBtn name="more-horizontal" size={28} title="Account menu" active={accountOpen} onClick={() => setAccountOpen((value) => !value)} />}
-          {accountOpen && (
-            <div
-              style={{
-                position: "absolute", right: 6, bottom: 46, width: 178, padding: 6, zIndex: 40,
-                borderRadius: "var(--r-sm)", border: "1px solid var(--border)", background: "var(--surface)",
-                boxShadow: "var(--shadow-pop)",
-              }}
-            >
-              <AccountMenuItem icon="user" label="Profile" onClick={() => { setAccountOpen(false); onGo({ view: "profile" }); }} />
-              <AccountMenuItem icon="settings" label="Settings" onClick={() => { setAccountOpen(false); onGo({ view: "settings" }); }} />
-              <div style={{ height: 1, background: "var(--border)", margin: "5px 4px" }} />
-              <AccountMenuItem icon="lock" label="Logout" danger onClick={signOut} />
-            </div>
-          )}
+    <>
+      <aside style={{
+        width: collapsed ? 72 : "var(--nav-w)", flexShrink: 0, height: "100%", boxSizing: "border-box",
+        background: "var(--bg-2)", borderRight: "1px solid var(--border)",
+        display: "flex", flexDirection: "column", padding: "14px 12px",
+        transition: "width 180ms cubic-bezier(0.22,1,0.36,1)",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "2px 6px 14px" }}>
+          <Logo collapsed={collapsed} />
+          {!collapsed && <IconBtn name="layers" size={30} title="Collapse sidebar" onClick={() => setCollapsed(true)} />}
         </div>
-      </div>
-    </aside>
+
+        {collapsed ? (
+          <IconBtn name="menu" size={36} title="Expand sidebar" onClick={() => setCollapsed(false)} style={{ margin: "0 auto 14px" }} />
+        ) : (
+          <Btn kind="primary" icon="plus" full onClick={onNew} style={{ marginBottom: 14 }}>New project</Btn>
+        )}
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 2, marginBottom: 14 }}>
+          <NavItem icon="dashboard" label="Dashboard" active={view === "dashboard"} onClick={() => onGo({ view: "dashboard" })} compact={collapsed} />
+          <NavItem icon="message-square" label="Chat" active={view === "chat"} onClick={() => onGo({ view: "chat" })} badge compact={collapsed} />
+          <NavItem icon="history" label="All projects" active={view === "history"} onClick={() => onGo({ view: "history" })} count={projects.length} compact={collapsed} />
+          <NavItem icon="tools" label="Skills" active={view === "skills"} onClick={() => onGo({ view: "skills" })} compact={collapsed} />
+        </div>
+
+        {!collapsed && <div className="eyebrow" style={{ padding: "0 8px 8px" }}>Recent sessions</div>}
+        <div style={{ display: "flex", flexDirection: "column", gap: 2, overflow: "auto", flex: 1, margin: "0 -4px", padding: "0 4px" }}>
+          {!collapsed && projects.length === 0 && <p className="faint" style={{ fontSize: 12, padding: "6px 8px" }}>No projects yet.</p>}
+          {projects.slice(0, 6).map((p) => {
+            const active = view === "session" && activeSession === p.id;
+            if (collapsed) return null;
+            return (
+              <button key={p.id} onClick={() => onOpenSession(p.id)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "8px 10px",
+                  border: "none", cursor: "pointer", borderRadius: "var(--r-sm)", textAlign: "left",
+                  background: active ? "var(--elevated)" : "transparent", transition: "background 130ms",
+                }}
+                onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "var(--elevated)"; }}
+                onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}>
+                <span style={{ width: 8, height: 8, borderRadius: 3, background: p.accent, flexShrink: 0, boxShadow: active ? `0 0 8px ${p.accent}` : "none" }} />
+                <span style={{ flex: 1, minWidth: 0, fontSize: 12.5, fontWeight: 500, color: active ? "var(--text)" : "var(--muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.title}</span>
+                {p.status === "running" && <StatusDot status="working" size={6} />}
+              </button>
+            );
+          })}
+        </div>
+
+        <div style={{ borderTop: "1px solid var(--border)", paddingTop: 8, marginTop: 8, display: "flex", flexDirection: "column", gap: 2 }}>
+          {collapsed ? (
+            <IconBtn name="dollar-sign" size={36} title="Buy me a coffee" onClick={() => openCoffee()} style={{ margin: "0 auto 6px" }} />
+          ) : (
+            <CoffeeCard onOpen={openCoffee} />
+          )}
+          <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 10, padding: "8px 8px 4px", marginTop: 4 }}>
+            <div style={{ width: 30, height: 30, borderRadius: "var(--r-pill)", background: "linear-gradient(135deg, var(--accent-2), var(--accent))", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>{user ? initialsOf(user) : ""}</div>
+            {!collapsed && <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{user?.name || (user ? "Swarm user" : "Loading…")}</div>
+              <div style={{ fontSize: 11, color: "var(--faint)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{user?.email || ""}</div>
+            </div>}
+            {!collapsed && <IconBtn name="more-horizontal" size={28} title="Account menu" active={accountOpen} onClick={() => setAccountOpen((value) => !value)} />}
+            {accountOpen && (
+              <div
+                style={{
+                  position: "absolute", right: 6, bottom: 46, width: 178, padding: 6, zIndex: 40,
+                  borderRadius: "var(--r-sm)", border: "1px solid var(--border)", background: "var(--surface)",
+                  boxShadow: "var(--shadow-pop)",
+                }}
+              >
+                <AccountMenuItem icon="user" label="Profile" onClick={() => { setAccountOpen(false); onGo({ view: "profile" }); }} />
+                <AccountMenuItem icon="settings" label="Settings" onClick={() => { setAccountOpen(false); onGo({ view: "settings" }); }} />
+                <div style={{ height: 1, background: "var(--border)", margin: "5px 4px" }} />
+                <AccountMenuItem icon="lock" label="Logout" danger onClick={signOut} />
+              </div>
+            )}
+          </div>
+        </div>
+      </aside>
+      {coffeeModal && (
+        <CoffeeModal
+          amount={coffeeAmount}
+          onAmountChange={setCoffeeAmount}
+          onClose={() => setCoffeeModal(false)}
+        />
+      )}
+    </>
+  );
+}
+
+function CoffeeCard({ onOpen }: {
+  onOpen: (count?: number) => void;
+}) {
+  return (
+    <div
+      style={{
+        marginBottom: 8,
+        padding: 12,
+        borderRadius: "var(--r-sm)",
+        border: "1px solid var(--border)",
+        background: "var(--surface)",
+        boxShadow: "var(--shadow-sm)",
+      }}
+    >
+      <button
+        type="button"
+        onClick={() => onOpen()}
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          padding: 0,
+          border: "none",
+          background: "transparent",
+          color: "var(--text)",
+          cursor: "pointer",
+          textAlign: "left",
+          fontFamily: "var(--font)",
+        }}
+      >
+        <span style={{ width: 38, height: 38, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <img src="/social-icon/starbucks.png" alt="" width={38} height={38} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+        </span>
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <span style={{ display: "block", fontSize: 13.5, fontWeight: 700 }}>Buy Me a Coffee</span>
+          <span style={{ display: "block", marginTop: 2, color: "var(--muted)", fontSize: 11.5 }}>Fuel up the AI Swarm</span>
+        </span>
+        <Icon name="chevron-right" size={14} style={{ color: "var(--faint)" }} />
+      </button>
+    </div>
+  );
+}
+
+function CoffeeModal({ amount, onAmountChange, onClose }: {
+  amount: number; onAmountChange: (amount: number) => void; onClose: () => void;
+}) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [note, setNote] = useState("");
+  const [paid, setPaid] = useState(false);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setPaid(true);
+  }
+
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "var(--scrim)", backdropFilter: "blur(5px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 20 }}>
+      <form
+        onSubmit={submit}
+        onClick={(event) => event.stopPropagation()}
+        className="glass-strong rise"
+        style={{
+          width: 560,
+          maxWidth: "94vw",
+          maxHeight: "90vh",
+          overflow: "auto",
+          borderRadius: "var(--r-xl)",
+          padding: 0,
+          boxShadow: "var(--shadow-lg)",
+        }}
+      >
+        <div style={{ padding: 24, borderBottom: "1px solid var(--border-soft)", background: "linear-gradient(135deg, var(--accent-soft), transparent 56%)" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 46, height: 46, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                <img src="/social-icon/starbucks.png" alt="" width={46} height={46} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+              </div>
+              <div>
+                <div className="h3">Buy Me a Coffee</div>
+                <p className="muted" style={{ fontSize: 13, marginTop: 3 }}>Fuel up the AI Swarm</p>
+              </div>
+            </div>
+            <IconBtn name="x" size={30} title="Close" onClick={onClose} />
+          </div>
+        </div>
+
+        {paid ? (
+          <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ borderRadius: "var(--r-md)", border: "1px solid var(--st-done)", background: "var(--st-done-soft)", padding: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--st-done)", fontWeight: 700 }}>
+                <Icon name="check-circle" size={18} />
+                Thanks{name.trim() ? `, ${name.trim()}` : ""}.
+              </div>
+              <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>Your ₹{amount.toLocaleString("en-IN")} coffee is queued. A real payment provider can be connected here when checkout is ready.</p>
+            </div>
+            <Btn kind="primary" full onClick={onClose}>Done</Btn>
+          </div>
+        ) : (
+          <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-2)", marginBottom: 8 }}>Quick select amount</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(86px, 1fr))", gap: 8 }}>
+                {COFFEE_AMOUNTS.map((value) => {
+                  const active = value === amount;
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => onAmountChange(value)}
+                      style={{
+                        height: 38,
+                        borderRadius: "var(--r-sm)",
+                        border: `1px solid ${active ? "var(--accent-line)" : "var(--border)"}`,
+                        background: active ? "var(--accent-soft)" : "var(--elevated)",
+                        color: active ? "var(--accent-2)" : "var(--text)",
+                        cursor: "pointer",
+                        fontFamily: "var(--mono)",
+                        fontWeight: 700,
+                      }}
+                    >
+                      ₹{value.toLocaleString("en-IN")}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <label style={{ display: "block" }}>
+                <span style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--text-2)", marginBottom: 6 }}>Name</span>
+                <input required value={name} onChange={(event) => setName(event.target.value)} autoFocus placeholder="Your name" style={coffeeInputStyle} />
+              </label>
+              <label style={{ display: "block" }}>
+                <span style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--text-2)", marginBottom: 6 }}>Email</span>
+                <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" style={coffeeInputStyle} />
+              </label>
+            </div>
+
+            <label style={{ display: "block" }}>
+              <span style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--text-2)", marginBottom: 6 }}>Message</span>
+              <textarea value={note} onChange={(event) => setNote(event.target.value)} rows={3} placeholder="Leave a note with your coffee..." style={{ ...coffeeInputStyle, height: "auto", minHeight: 86, padding: "10px 12px", resize: "vertical", lineHeight: 1.5 }} />
+            </label>
+
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: 14, borderRadius: "var(--r-md)", background: "var(--surface)", border: "1px solid var(--border)" }}>
+              <div>
+                <div style={{ fontSize: 12, color: "var(--muted)" }}>Total support</div>
+                <div className="mono" style={{ fontSize: 24, fontWeight: 700, color: "var(--text)", lineHeight: 1.15 }}>₹{amount.toLocaleString("en-IN")}</div>
+              </div>
+              <Btn kind="primary" size="lg" icon="dollar-sign" type="submit">Pay now</Btn>
+            </div>
+          </div>
+        )}
+      </form>
+    </div>
   );
 }
 
