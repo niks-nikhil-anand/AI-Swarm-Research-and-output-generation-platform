@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: data?.error?.message || `OpenRouter request failed with status ${upstream.status}` }, { status: upstream.status });
   }
 
-  const data = await upstream.json();
+  const data = await upstream.json().catch(() => null);
   const content = data?.choices?.[0]?.message?.content;
   if (!content || typeof content !== "string") {
     return NextResponse.json({ error: "OpenRouter returned an empty response" }, { status: 502 });
