@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { HomePage } from "../components/home/HomePage";
+import { LandingPage } from "@/components/landing/LandingPage";
 
 export const metadata: Metadata = {
-  title: "AI Swarm Research Platform | Open-Source AI Agent Workflow",
+  title: "AI Swarm — One goal. A team of AI agents.",
   description:
-    "AI Swarm is an open-source AI research platform with AI Nexus Chat, agent workflows, source-aware output generation, and long-running research sessions.",
+    "AI Swarm plans, delegates, executes and reviews complex tasks with specialized AI agents that work together toward one finished result.",
   keywords: [
     "AI Swarm",
     "AI research platform",
@@ -20,11 +20,11 @@ export const metadata: Metadata = {
   openGraph: {
     title: "AI Swarm Research Platform",
     description:
-      "Research deeper, chat longer, and turn ideas into verified outputs with coordinated AI agents.",
+      "Multiple AI agents, one goal, one finished result. Plan, delegate, execute and review complex work with an AI swarm.",
     type: "website",
   },
 };
 
 export default function Home() {
-  return <HomePage />;
+  return <LandingPage />;
 }
