@@ -5,10 +5,10 @@ import { demoPresets, type DemoAgent, type DemoPreset } from "../data/content";
 import { icons } from "../data/icons";
 import { statusTones } from "../data/tones";
 import { Icon } from "../ui/Icon";
-import { ProgressBar, StatusBadge } from "../ui/StatusBadge";
+import { AvailabilityBadge, ProgressBar, StatusBadge } from "../ui/StatusBadge";
 import { TrafficLights } from "../ui/WindowFrame";
 
-/** Interactive "Try a swarm" window. Pre-recorded runs — no model call. */
+/** Interactive "Try a task" window. Pre-recorded runs — no model call. */
 export function HeroDemo() {
   const [selected, setSelected] = useState(0);
   const preset = demoPresets[selected];
@@ -43,14 +43,14 @@ function PresetPanel({
 }) {
   return (
     <div className="flex flex-col px-4 pt-[18px] xl:w-[340px] xl:shrink-0 xl:border-r xl:border-white/10 xl:p-7">
-      <div className="font-code text-[11px] tracking-[0.12em] text-brand">TRY A SWARM</div>
+      <div className="font-code text-[11px] tracking-[0.12em] text-brand">TRY A SAAS TASK</div>
 
-      <div className="mt-4 hidden text-[13px] text-muted xl:block">Goal</div>
+      <div className="mt-4 hidden text-[13px] text-muted xl:block">Your idea</div>
       <div className="mt-2 hidden min-h-11 rounded-xl border border-line bg-panel p-3.5 font-code text-[13px] leading-[1.55] text-fg xl:block">
         {preset.goal}
       </div>
 
-      <div className="mt-6 hidden text-[13px] text-muted xl:block">Presets</div>
+      <div className="mt-6 hidden text-[13px] text-muted xl:block">Templates</div>
       <div className="mt-3 flex flex-wrap gap-2 xl:mt-2 xl:flex-col">
         {demoPresets.map((p, i) => {
           const active = i === selected;
@@ -60,7 +60,7 @@ function PresetPanel({
               type="button"
               aria-pressed={active}
               onClick={() => onSelect(i)}
-              className={`rounded-full border px-3 py-2 text-left text-[13px] transition-colors xl:rounded-[10px] xl:px-3.5 xl:py-2.5 xl:text-sm ${
+              className={`flex items-center justify-between gap-2 rounded-full border px-3 py-2 text-left text-[13px] transition-colors xl:rounded-[10px] xl:px-3.5 xl:py-2.5 xl:text-sm ${
                 active
                   ? "border-brand/30 bg-brand/10 text-brand-soft"
                   : "border-line bg-transparent text-muted hover:text-fg-2"
@@ -68,6 +68,7 @@ function PresetPanel({
             >
               <span className="xl:hidden">{p.mobileLabel ?? p.label}</span>
               <span className="hidden xl:inline">{p.label}</span>
+              {p.availability && p.availability !== "live" && <AvailabilityBadge value={p.availability} />}
             </button>
           );
         })}
@@ -101,7 +102,7 @@ function DesktopGraph({ preset }: { preset: DemoPreset }) {
 
         <div className="absolute top-3.5 left-[200px] flex h-[46px] w-[360px] items-center gap-2.5 rounded-xl border border-line bg-panel px-3.5">
           <Icon d={icons.flag} className="text-muted" />
-          <span className="font-code text-[10px] tracking-[0.1em] text-dim">GOAL</span>
+          <span className="font-code text-[10px] tracking-[0.1em] text-dim">IDEA</span>
           <span className="truncate text-[13px] text-fg">{preset.short}</span>
         </div>
 
@@ -110,7 +111,7 @@ function DesktopGraph({ preset }: { preset: DemoPreset }) {
             <Icon d={icons.logo} size={15} strokeWidth={1.8} />
           </span>
           <div className="flex flex-col gap-0.5">
-            <span className="text-sm font-medium">Orchestrator</span>
+            <span className="text-sm font-medium">Planner</span>
             <span className="font-code text-[10.5px] text-brand-soft">{preset.plan}</span>
           </div>
         </div>
@@ -124,7 +125,7 @@ function DesktopGraph({ preset }: { preset: DemoPreset }) {
             <Icon d={icons.shieldCheck} size={15} />
           </span>
           <div className="flex flex-col gap-[3px]">
-            <span className="text-sm font-medium">Reviewer</span>
+            <span className="text-sm font-medium">Fact-Checker</span>
             <span className="font-code text-[11px] text-dim">Waiting for outputs…</span>
           </div>
         </div>
@@ -170,12 +171,12 @@ function MobileGraph({ preset }: { preset: DemoPreset }) {
         <div aria-hidden="true" className="absolute top-5 bottom-5 left-[21px] border-l-[1.5px] border-dashed border-brand/50" />
 
         <div className="relative flex flex-col gap-[3px] rounded-xl border border-line bg-panel px-3.5 py-3">
-          <span className="font-code text-[10px] tracking-[0.1em] text-dim">GOAL</span>
+          <span className="font-code text-[10px] tracking-[0.1em] text-dim">IDEA</span>
           <span className="text-[13px] text-fg">{preset.short}</span>
         </div>
 
         <div className="relative flex items-center justify-between rounded-xl border border-brand/45 bg-panel-2 px-3.5 py-3">
-          <span className="text-sm font-medium">Orchestrator</span>
+          <span className="text-sm font-medium">Planner</span>
           <span className="font-code text-[10.5px] text-brand-soft">{preset.plan}</span>
         </div>
 
@@ -196,7 +197,7 @@ function MobileGraph({ preset }: { preset: DemoPreset }) {
         ))}
 
         <div className="relative flex items-center justify-between rounded-xl border border-line bg-panel px-3.5 py-3">
-          <span className="text-sm font-medium">Reviewer</span>
+          <span className="text-sm font-medium">Fact-Checker</span>
           <span className="font-code text-[10.5px] text-dim">Waiting for outputs…</span>
         </div>
 
