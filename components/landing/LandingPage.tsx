@@ -1,27 +1,26 @@
 import { landingFontVariables } from "./fonts";
-import { AgentLibrary } from "./sections/AgentLibrary";
 import { AnnouncementBar } from "./sections/AnnouncementBar";
-import { CaseStudies } from "./sections/CaseStudies";
-import { ChatbotVsSwarm } from "./sections/ChatbotVsSwarm";
-import { Developers } from "./sections/Developers";
+import { AppBuildersSkip } from "./sections/AppBuildersSkip";
+import { Engine } from "./sections/Engine";
 import { Faq } from "./sections/Faq";
 import { FinalCta } from "./sections/FinalCta";
 import { Footer } from "./sections/Footer";
+import { FounderProblem } from "./sections/FounderProblem";
 import { Hero } from "./sections/Hero";
 import { HowItWorks } from "./sections/HowItWorks";
-import { Integrations } from "./sections/Integrations";
+import { InControl } from "./sections/InControl";
 import { LiveExecution } from "./sections/LiveExecution";
-import { MemoryReview } from "./sections/MemoryReview";
 import { Navbar } from "./sections/Navbar";
 import { Pricing } from "./sections/Pricing";
-import { ReadySwarms } from "./sections/ReadySwarms";
-import { Security } from "./sections/Security";
-import { SwarmBuilder } from "./sections/SwarmBuilder";
-import { UseCases } from "./sections/UseCases";
+import { Stack } from "./sections/Stack";
+import { Stages } from "./sections/Stages";
+import { Team } from "./sections/Team";
+import { Workspace } from "./sections/Workspace";
 
 /**
- * Marketing homepage. The root layout locks <body> scrolling for the app shell,
- * so this page owns its own scroll container.
+ * Marketing homepage for SaaS Launch (see documentation/POSITIONING.md §7).
+ * The root layout locks <body> scrolling for the app shell, so this page owns
+ * its own scroll container.
  */
 export function LandingPage() {
   return (
@@ -32,19 +31,17 @@ export function LandingPage() {
       <Navbar />
       <main>
         <Hero />
-        <ChatbotVsSwarm />
+        <FounderProblem />
         <HowItWorks />
         <LiveExecution />
-        <AgentLibrary />
-        <ReadySwarms />
-        <SwarmBuilder />
-        <Integrations />
-        <MemoryReview />
-        <UseCases />
-        <Developers />
-        <CaseStudies />
+        <Stages />
+        <Team />
+        <AppBuildersSkip />
+        <Workspace />
+        <Stack />
+        <Engine />
+        <InControl />
         <Pricing />
-        <Security />
         <Faq />
         <FinalCta />
       </main>
