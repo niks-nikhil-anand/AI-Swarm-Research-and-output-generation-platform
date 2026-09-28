@@ -10,15 +10,15 @@ const panelLabel = "font-code text-[11px] tracking-[0.12em] text-dim";
 
 export function LiveExecution() {
   return (
-    <Section>
+    <Section id="demo">
       <SectionHeader
-        eyebrow="LIVE EXECUTION"
+        eyebrow="LIVE SWARM"
         title={
           <>
-            Watch your AI team <Accent>work.</Accent>
+            Watch your AI product team <Accent>work.</Accent>
           </>
         }
-        description="Every run is inspectable: which agent is doing what, what it produced, and what it cost. Nothing happens in a black box."
+        description="Independent tasks run in parallel and you watch the graph execute: which agent is doing what, what it found, and what it cost. Nothing happens in a black box."
       />
 
       <WindowFrame
@@ -27,7 +27,7 @@ export function LiveExecution() {
         title={
           <>
             <span className="hidden font-code text-xs text-dim sm:inline">run_0142</span>
-            <span className="grow truncate text-sm text-fg-2">Research the AI developer tool market</span>
+            <span className="grow truncate text-sm text-fg-2">Validate: AI interview-prep SaaS for developers</span>
             <span className="flex items-center gap-1.5 rounded-full border border-brand/30 bg-brand/10 px-2.5 py-[3px] font-code text-[10.5px] text-brand-soft">
               <span className="size-1.5 animate-blink rounded-full bg-brand-soft" />
               RUNNING
