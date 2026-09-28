@@ -13,14 +13,14 @@ export function Faq() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
-    <Section className="grid grid-cols-1 items-start gap-10 lg:grid-cols-[1fr_1.4fr]">
+    <Section id="faq" className="grid grid-cols-1 items-start gap-10 lg:grid-cols-[1fr_1.4fr]">
       <div className="flex flex-col">
         <SectionHeader
           eyebrow="FAQ"
           size="lg"
           title={
             <>
-              Questions before you <Accent>run a swarm.</Accent>
+              Questions before you <Accent>start.</Accent>
             </>
           }
         />
