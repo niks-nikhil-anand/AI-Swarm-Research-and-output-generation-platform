@@ -27,7 +27,15 @@ export const statusTones: Record<
   },
 };
 
-export type Hue = "amber" | "pink" | "sky" | "mint" | "brand" | "dim";
+export type Availability = "live" | "soon" | "later";
+
+export const availabilityTones: Record<Availability, { label: string; badge: string }> = {
+  live: { label: "LIVE", badge: "text-mint bg-mint/10 border-mint/30" },
+  soon: { label: "SOON", badge: "text-brand-soft bg-brand/10 border-brand/30" },
+  later: { label: "COMING LATER", badge: "text-dim bg-transparent border-line" },
+};
+
+export type Hue ="amber" | "pink" | "sky" | "mint" | "brand" | "dim";
 
 export const hueTones: Record<
   Hue,
