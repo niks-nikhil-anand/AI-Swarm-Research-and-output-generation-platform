@@ -5,7 +5,7 @@ import { ButtonLink } from "../ui/ButtonLink";
 import { Eyebrow } from "../ui/SectionHeader";
 
 const corner = "absolute size-3.5 border-brand/50";
-const flow = ["goal", "planner", "agents", "reviewer", "done"];
+const flow = ["idea", "research", "design", "build", "deploy", "launch", "improve"];
 
 export function FinalCta() {
   return (
@@ -22,18 +22,18 @@ export function FinalCta() {
           <span aria-hidden="true" className={`${corner} right-5 bottom-5 border-r border-b`} />
 
           <div className="relative">
-            <Eyebrow>GET STARTED</Eyebrow>
+            <Eyebrow>SAAS LAUNCH</Eyebrow>
           </div>
           <h2 className="relative mt-4 text-center font-display text-[38px] leading-[1.08] font-normal tracking-[-0.03em] lg:text-[58px]">
-            Give your next goal <Accent strong>a team.</Accent>
+            Your AI <Accent strong>startup team.</Accent>
           </h2>
           <p className="relative mt-5 max-w-[520px] text-center text-base leading-[1.7] text-muted">
-            Start with a free swarm and see what coordinated agents do with a real task of yours.
+            Start with a free validation report today. Design, build, deploy and launch join the team as each stage ships.
           </p>
           <div className="relative mt-9 flex flex-col gap-3 sm:flex-row">
-            <ButtonLink href={routes.start}>Start Free →</ButtonLink>
-            <ButtonLink href="#swarms" variant="secondary">
-              Explore Swarms
+            <ButtonLink href={routes.start}>Start with your idea →</ButtonLink>
+            <ButtonLink href="#pricing" variant="secondary">
+              See pricing
             </ButtonLink>
           </div>
           <div className="relative mt-11 flex flex-wrap items-center justify-center gap-2.5 font-code text-[11px] text-dim">
