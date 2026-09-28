@@ -7,7 +7,7 @@
 ---
 
 ## 1. Pressure test before we commit
-
+new 
 The positioning is stronger than "multi-agent framework." It also creates four problems. Each one is resolved later in this doc.
 
 | # | Weak point | Why it matters | Resolution |
