@@ -2,25 +2,25 @@ import type { Metadata } from "next";
 import { LandingPage } from "@/components/landing/LandingPage";
 
 export const metadata: Metadata = {
-  title: "AI Swarm — One goal. A team of AI agents.",
+  title: "Launch your SaaS with an AI team | AI Swarm",
   description:
-    "AI Swarm plans, delegates, executes and reviews complex tasks with specialized AI agents that work together toward one finished result.",
+    "Validate your SaaS idea, write the spec, build the app and prepare your launch with an AI product team, all in one workspace.",
   keywords: [
-    "AI Swarm",
-    "AI research platform",
-    "open-source AI chat platform",
-    "AI agent workflow",
-    "AI Nexus Chat",
-    "long-context AI chat",
-    "AI research assistant",
-    "AI output generation",
-    "AI tools for developers",
-    "Next.js AI platform",
+    "SaaS launch",
+    "validate SaaS idea",
+    "AI product team",
+    "SaaS market research",
+    "competitor analysis",
+    "PRD generator",
+    "AI for indie hackers",
+    "AI for solo founders",
+    "Product Hunt launch kit",
+    "Next.js SaaS",
   ],
   openGraph: {
-    title: "AI Swarm Research Platform",
+    title: "Launch your SaaS with an AI team",
     description:
-      "Multiple AI agents, one goal, one finished result. Plan, delegate, execute and review complex work with an AI swarm.",
+      "Give your SaaS idea an AI product team: research, spec, code, marketing and launch, with every step approved by you.",
     type: "website",
   },
 };
