@@ -12,7 +12,7 @@ export function Footer() {
               <span className="text-[15px] font-medium">AI Swarm</span>
             </div>
             <p className="m-0 max-w-[280px] text-[13px] leading-[1.65] text-muted">
-              Specialized AI agents that plan, execute and review complex work together.
+              Your AI startup team: research, design, build, deploy, market and launch your SaaS.
             </p>
             <a href="#" className="font-code text-xs text-brand-soft hover:text-fg">
               Built by DevKit Market →
