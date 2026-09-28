@@ -12,7 +12,7 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
   if (authed && PUBLIC_PATHS.includes(pathname)) {
-    if (pathname !== "/") return NextResponse.redirect(new URL("/new-swarm", request.url));
+    if (pathname !== "/") return NextResponse.redirect(new URL("/new-swarme", request.url));
   }
 }
 
